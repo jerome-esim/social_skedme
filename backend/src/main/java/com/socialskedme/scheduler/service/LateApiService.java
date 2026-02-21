@@ -34,6 +34,12 @@ public class LateApiService {
      * @return Late post ID
      */
     public String schedulePost(String payloadJson) throws Exception {
+        // ── Mock mode: no API key configured (local dev) ──────────────────
+        String apiKey = lateApiConfig.getApiKey();
+        if (apiKey == null || apiKey.isBlank()) {
+            return mockSchedule(payloadJson);
+        }
+
         Map<String, Object> payload = objectMapper.readValue(
                 payloadJson, new TypeReference<>() {}
         );
@@ -53,7 +59,7 @@ public class LateApiService {
         lateRequest.put("platforms",    platforms);
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(lateApiConfig.getApiKey());
+        headers.setBearerAuth(apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         String url = lateApiConfig.getBaseUrl() + "/v1/posts";
@@ -72,5 +78,18 @@ public class LateApiService {
         }
 
         throw new RuntimeException("Late API returned non-2xx: " + response.getStatusCode());
+    }
+
+    /**
+     * Mock mode — used when LATE_API_KEY is not set.
+     * Simulates a successful Late API call so the full flow can be tested locally.
+     * Posts reach status 'scheduled'; they won't actually be published.
+     */
+    private String mockSchedule(String payloadJson) throws Exception {
+        Map<String, Object> payload = objectMapper.readValue(payloadJson, new TypeReference<>() {});
+        String fakeId = "mock_late_" + java.util.UUID.randomUUID().toString().substring(0, 8);
+        log.warn("[MOCK] LATE_API_KEY not set — simulating Late API. postId={} fakeId={}",
+                payload.get("postId"), fakeId);
+        return fakeId;
     }
 }
