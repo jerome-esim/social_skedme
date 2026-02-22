@@ -62,7 +62,7 @@ public class LateApiService {
         headers.setBearerAuth(apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        String url = lateApiConfig.getBaseUrl() + "/v1/posts";
+        String url = lateApiConfig.getBaseUrl() + "/api/v1/posts";
         log.info("Calling Late API: POST {} scheduledFor={}", url, scheduledFor);
 
         ResponseEntity<Map> response = restTemplate.postForEntity(

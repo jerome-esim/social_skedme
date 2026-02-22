@@ -41,7 +41,7 @@ app:
   # ── Late API ───────────────────────────────────────────────────────────────
   late:
     api-key: ${LATE_API_KEY:}
-    base-url: ${LATE_API_BASE_URL:https://api.getlate.dev}
+    base-url: ${LATE_API_BASE_URL:https://getlate.dev}
     webhook-secret: ${LATE_WEBHOOK_SECRET:}
 
   # ── S3 / MinIO ────────────────────────────────────────────────────────────
