@@ -44,6 +44,48 @@ services:
       echo 'MinIO bucket created';
       "
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: skedme_backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/scheduler
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      LATE_API_KEY: ${LATE_API_KEY:-}
+      LATE_API_BASE_URL: ${LATE_API_BASE_URL:-https://api.getlate.dev}
+      LATE_WEBHOOK_SECRET: ${LATE_WEBHOOK_SECRET:-}
+      S3_BUCKET: ${S3_BUCKET:-scheduler-videos}
+      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY:-minioadmin}
+      AWS_SECRET_KEY: ${AWS_SECRET_KEY:-minioadmin}
+      AWS_REGION: ${AWS_REGION:-eu-west-3}
+      S3_ENDPOINT: http://minio:9000
+      VIDEO_RETENTION_DAYS: ${VIDEO_RETENTION_DAYS:-30}
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/8080' 2>/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: skedme_frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
 volumes:
   postgres_data:
   minio_data:
