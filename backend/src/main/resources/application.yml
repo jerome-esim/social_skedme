@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: social-skedme
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/scheduler}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+server:
+  port: 8080
+
+# ── JWT ───────────────────────────────────────────────────────────────────────
+app:
+  jwt:
+    secret: ${JWT_SECRET:ZGVmYXVsdC1zZWNyZXQtZm9yLWxvY2FsLWRldi1vbmx5LWRvLW5vdC11c2UtaW4tcHJvZA==}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+  # ── Late API ───────────────────────────────────────────────────────────────
+  late:
+    api-key: ${LATE_API_KEY:}
+    base-url: ${LATE_API_BASE_URL:https://api.getlate.dev}
+    webhook-secret: ${LATE_WEBHOOK_SECRET:}
+
+  # ── S3 / MinIO ────────────────────────────────────────────────────────────
+  s3:
+    bucket: ${S3_BUCKET:scheduler-videos}
+    access-key: ${AWS_ACCESS_KEY:minioadmin}
+    secret-key: ${AWS_SECRET_KEY:minioadmin}
+    region: ${AWS_REGION:eu-west-3}
+    endpoint: ${S3_ENDPOINT:http://localhost:9000}
+
+  # ── Media retention ───────────────────────────────────────────────────────
+  media:
+    # Days after last update before a published/failed post's video is deleted from S3
+    video-retention-days: ${VIDEO_RETENTION_DAYS:30}
+
+logging:
+  level:
+    com.socialskedme: DEBUG
+    org.springframework.security: INFO
