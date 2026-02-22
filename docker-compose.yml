@@ -45,7 +45,9 @@ services:
       "
 
   backend:
-    image: ghcr.io/jerome-esim/social_skedme/backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: skedme_backend
     depends_on:
       postgres:
@@ -75,7 +77,9 @@ services:
       start_period: 60s
 
   frontend:
-    image: ghcr.io/jerome-esim/social_skedme/frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: skedme_frontend
     depends_on:
       - backend
