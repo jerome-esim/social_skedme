@@ -113,15 +113,13 @@ public class LateApiService {
         }
         log.info("Late profile response body: {}", profileResponse.getBody());
 
-        // Late.dev may return the id under "id" or "profileId"
-        String profileId = null;
-        for (String key : new String[]{"id", "profileId", "profile_id"}) {
-            Object val = profileResponse.getBody().get(key);
-            if (val != null) { profileId = val.toString(); break; }
+        // Response: { "message": "...", "profile": { "_id": "...", ... } }
+        @SuppressWarnings("unchecked")
+        Map<String, Object> profileObj = (Map<String, Object>) profileResponse.getBody().get("profile");
+        if (profileObj == null) {
+            throw new RuntimeException("No 'profile' object in Late API response: " + profileResponse.getBody());
         }
-        if (profileId == null) {
-            throw new RuntimeException("Could not find profile ID in Late API response: " + profileResponse.getBody());
-        }
+        String profileId = (String) profileObj.get("_id");
         log.info("Created Late profile: {}", profileId);
 
         // 2. Get the OAuth connect URL — response may be JSON {url:...} or plain text
