@@ -1,8 +1,11 @@
 package com.socialskedme.scheduler.controller;
 
 import com.socialskedme.scheduler.dto.ConnectAccountRequest;
+import com.socialskedme.scheduler.dto.ConnectUrlRequest;
+import com.socialskedme.scheduler.dto.ConnectUrlResponse;
 import com.socialskedme.scheduler.model.SocialAccount;
 import com.socialskedme.scheduler.model.User;
+import com.socialskedme.scheduler.service.LateApiService;
 import com.socialskedme.scheduler.service.SocialAccountService;
 import com.socialskedme.scheduler.service.UserService;
 import jakarta.validation.Valid;
@@ -22,12 +25,28 @@ import java.util.UUID;
 public class SocialAccountController {
 
     private final SocialAccountService socialAccountService;
+    private final LateApiService lateApiService;
     private final UserService userService;
 
     @GetMapping
     public ResponseEntity<List<SocialAccount>> list(@AuthenticationPrincipal UserDetails principal) {
         UUID userId = resolveUserId(principal);
         return ResponseEntity.ok(socialAccountService.getAccounts(userId));
+    }
+
+    @PostMapping("/connect-url")
+    public ResponseEntity<ConnectUrlResponse> connectUrl(
+            @Valid @RequestBody ConnectUrlRequest request,
+            @AuthenticationPrincipal UserDetails principal
+    ) throws Exception {
+        LateApiService.ConnectUrlResult result =
+                lateApiService.createProfileAndGetConnectUrl(request.getPlatform(), request.getAccountName());
+        return ResponseEntity.ok(new ConnectUrlResponse(
+                result.connectUrl(),
+                result.profileId(),
+                request.getPlatform(),
+                request.getAccountName()
+        ));
     }
 
     @PostMapping("/connect")

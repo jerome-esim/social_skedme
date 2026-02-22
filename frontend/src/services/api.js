@@ -47,9 +47,10 @@ export const media = {
 }
 
 export const accounts = {
-  list:    ()        => api.get('/api/accounts'),
-  connect: (data)    => api.post('/api/accounts/connect', data),
-  remove:  (id)      => api.delete(`/api/accounts/${id}`),
+  list:       ()       => api.get('/api/accounts'),
+  connectUrl: (data)   => api.post('/api/accounts/connect-url', data),
+  connect:    (data)   => api.post('/api/accounts/connect', data),
+  remove:     (id)     => api.delete(`/api/accounts/${id}`),
 }
 
 export default api
