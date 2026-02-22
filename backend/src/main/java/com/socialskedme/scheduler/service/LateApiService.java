@@ -96,7 +96,9 @@ public class LateApiService {
 
         // 1. Create a Late profile
         Map<String, Object> profileBody = new HashMap<>();
-        profileBody.put("name", accountName != null && !accountName.isBlank() ? accountName : platform + " account");
+        String profileName = (accountName != null && !accountName.isBlank() ? accountName : platform)
+                + " - " + System.currentTimeMillis();
+        profileBody.put("name", profileName);
         profileBody.put("description", "Connected via SkedMe");
 
         String profileUrl = lateApiConfig.getBaseUrl() + "/api/v1/profiles";
