@@ -54,6 +54,12 @@ public class Post {
     @Column(name = "error_message")
     private String errorMessage;
 
+    @Column(name = "video_purged")
+    private boolean videoPurged;
+
+    @Column(name = "video_purged_at")
+    private LocalDateTime videoPurgedAt;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

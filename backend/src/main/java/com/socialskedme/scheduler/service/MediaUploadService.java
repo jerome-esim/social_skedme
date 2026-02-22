@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
@@ -48,12 +49,44 @@ public class MediaUploadService {
         return new UploadResponse(videoUrl, originalName, file.getSize());
     }
 
+    /**
+     * Deletes a video from S3/MinIO given its full URL.
+     * Silently ignores errors (e.g. file already deleted).
+     */
+    public void deleteByUrl(String videoUrl) {
+        if (videoUrl == null || videoUrl.isBlank()) return;
+        try {
+            String key = extractKey(videoUrl);
+            s3Client.deleteObject(DeleteObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build());
+            log.info("Deleted video from S3: key={}", key);
+        } catch (Exception e) {
+            log.warn("Failed to delete video from S3 url={}: {}", videoUrl, e.getMessage());
+        }
+    }
+
+    /**
+     * Extracts the S3 object key from a full URL.
+     * Works for both MinIO (http://host/bucket/key) and AWS (https://bucket.s3.region.amazonaws.com/key).
+     */
+    private String extractKey(String url) {
+        // MinIO: http://localhost:9000/scheduler-videos/uuid/file.mp4  → uuid/file.mp4
+        // AWS:   https://bucket.s3.region.amazonaws.com/uuid/file.mp4  → uuid/file.mp4
+        String prefix = "/" + bucket + "/";
+        int idx = url.indexOf(prefix);
+        if (idx >= 0) {
+            return url.substring(idx + prefix.length());
+        }
+        // Fallback: strip everything up to and including the first '/' after the host+bucket
+        throw new IllegalArgumentException("Cannot extract S3 key from URL: " + url);
+    }
+
     private String buildUrl(String key) {
-        // MinIO / custom endpoint
         if (endpoint != null && !endpoint.isBlank()) {
             return endpoint + "/" + bucket + "/" + key;
         }
-        // AWS S3
         return "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key;
     }
 }

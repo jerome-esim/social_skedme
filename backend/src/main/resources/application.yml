@@ -52,6 +52,11 @@ app:
     region: ${AWS_REGION:eu-west-3}
     endpoint: ${S3_ENDPOINT:http://localhost:9000}
 
+  # ── Media retention ───────────────────────────────────────────────────────
+  media:
+    # Days after last update before a published/failed post's video is deleted from S3
+    video-retention-days: ${VIDEO_RETENTION_DAYS:30}
+
 logging:
   level:
     com.socialskedme: DEBUG

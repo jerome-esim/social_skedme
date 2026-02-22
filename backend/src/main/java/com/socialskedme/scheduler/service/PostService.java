@@ -29,6 +29,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final OutboxRepository outboxRepository;
     private final SocialAccountRepository socialAccountRepository;
+    private final MediaUploadService mediaUploadService;
     private final ObjectMapper objectMapper;
 
     /**
@@ -123,6 +124,11 @@ public class PostService {
 
         if (Set.of("scheduled", "published").contains(post.getStatus())) {
             throw new IllegalStateException("Cannot delete a " + post.getStatus() + " post");
+        }
+
+        // Delete the video from S3/MinIO before removing the DB record
+        if (!post.isVideoPurged()) {
+            mediaUploadService.deleteByUrl(post.getVideoUrl());
         }
 
         postRepository.delete(post);
