@@ -19,6 +19,14 @@ public class SocialAccountService {
         return socialAccountRepository.findByUserId(userId);
     }
 
+    public String getExistingProfileId(UUID userId) {
+        return socialAccountRepository.findByUserId(userId).stream()
+                .map(SocialAccount::getLateAccountId)
+                .filter(id -> id != null && !id.isBlank())
+                .findFirst()
+                .orElse(null);
+    }
+
     public SocialAccount connectAccount(ConnectAccountRequest request, UUID userId) {
         SocialAccount account = SocialAccount.builder()
                 .userId(userId)

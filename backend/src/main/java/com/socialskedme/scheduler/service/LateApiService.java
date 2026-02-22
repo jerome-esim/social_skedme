@@ -84,7 +84,7 @@ public class LateApiService {
      * Creates a Late profile and returns the OAuth connect URL for the given platform.
      * The frontend opens this URL so the user can authorize access.
      */
-    public ConnectUrlResult createProfileAndGetConnectUrl(String platform, String accountName) throws Exception {
+    public ConnectUrlResult createProfileAndGetConnectUrl(String platform, String accountName, String existingProfileId) throws Exception {
         String apiKey = lateApiConfig.getApiKey();
         if (apiKey == null || apiKey.isBlank()) {
             return mockConnectUrl(platform);
@@ -94,32 +94,37 @@ public class LateApiService {
         headers.setBearerAuth(apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        // 1. Create a Late profile
-        Map<String, Object> profileBody = new HashMap<>();
-        String profileName = (accountName != null && !accountName.isBlank() ? accountName : platform)
-                + " - " + System.currentTimeMillis();
-        profileBody.put("name", profileName);
-        profileBody.put("description", "Connected via SkedMe");
+        // 1. Reuse existing profile or create a new one
+        String profileId = existingProfileId;
+        if (profileId == null || profileId.isBlank()) {
+            Map<String, Object> profileBody = new HashMap<>();
+            String profileName = (accountName != null && !accountName.isBlank() ? accountName : platform)
+                    + " - " + System.currentTimeMillis();
+            profileBody.put("name", profileName);
+            profileBody.put("description", "Connected via SkedMe");
 
-        String profileUrl = lateApiConfig.getBaseUrl() + "/api/v1/profiles";
-        ResponseEntity<Map> profileResponse = restTemplate.postForEntity(
-                profileUrl,
-                new HttpEntity<>(profileBody, headers),
-                Map.class
-        );
+            String profileUrl = lateApiConfig.getBaseUrl() + "/api/v1/profiles";
+            ResponseEntity<Map> profileResponse = restTemplate.postForEntity(
+                    profileUrl,
+                    new HttpEntity<>(profileBody, headers),
+                    Map.class
+            );
 
-        if (!profileResponse.getStatusCode().is2xxSuccessful() || profileResponse.getBody() == null) {
-            throw new RuntimeException("Failed to create Late profile: " + profileResponse.getStatusCode());
+            if (!profileResponse.getStatusCode().is2xxSuccessful() || profileResponse.getBody() == null) {
+                throw new RuntimeException("Failed to create Late profile: " + profileResponse.getStatusCode());
+            }
+
+            // Response: { "message": "...", "profile": { "_id": "...", ... } }
+            @SuppressWarnings("unchecked")
+            Map<String, Object> profileObj = (Map<String, Object>) profileResponse.getBody().get("profile");
+            if (profileObj == null) {
+                throw new RuntimeException("No 'profile' object in Late API response: " + profileResponse.getBody());
+            }
+            profileId = (String) profileObj.get("_id");
+            log.info("Created new Late profile: {}", profileId);
+        } else {
+            log.info("Reusing existing Late profile: {}", profileId);
         }
-        log.info("Late profile response body: {}", profileResponse.getBody());
-
-        // Response: { "message": "...", "profile": { "_id": "...", ... } }
-        @SuppressWarnings("unchecked")
-        Map<String, Object> profileObj = (Map<String, Object>) profileResponse.getBody().get("profile");
-        if (profileObj == null) {
-            throw new RuntimeException("No 'profile' object in Late API response: " + profileResponse.getBody());
-        }
-        String profileId = (String) profileObj.get("_id");
         log.info("Created Late profile: {}", profileId);
 
         // 2. Get the OAuth connect URL — response may be JSON {url:...} or plain text

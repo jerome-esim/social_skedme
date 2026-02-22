@@ -39,8 +39,10 @@ public class SocialAccountController {
             @Valid @RequestBody ConnectUrlRequest request,
             @AuthenticationPrincipal UserDetails principal
     ) throws Exception {
+        UUID userId = resolveUserId(principal);
+        String existingProfileId = socialAccountService.getExistingProfileId(userId);
         LateApiService.ConnectUrlResult result =
-                lateApiService.createProfileAndGetConnectUrl(request.getPlatform(), request.getAccountName());
+                lateApiService.createProfileAndGetConnectUrl(request.getPlatform(), request.getAccountName(), existingProfileId);
         return ResponseEntity.ok(new ConnectUrlResponse(
                 result.connectUrl(),
                 result.profileId(),
