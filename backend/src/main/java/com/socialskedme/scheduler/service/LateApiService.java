@@ -109,23 +109,38 @@ public class LateApiService {
         if (!profileResponse.getStatusCode().is2xxSuccessful() || profileResponse.getBody() == null) {
             throw new RuntimeException("Failed to create Late profile: " + profileResponse.getStatusCode());
         }
-        String profileId = (String) profileResponse.getBody().get("id");
+        log.info("Late profile response body: {}", profileResponse.getBody());
+
+        // Late.dev may return the id under "id" or "profileId"
+        String profileId = null;
+        for (String key : new String[]{"id", "profileId", "profile_id"}) {
+            Object val = profileResponse.getBody().get(key);
+            if (val != null) { profileId = val.toString(); break; }
+        }
+        if (profileId == null) {
+            throw new RuntimeException("Could not find profile ID in Late API response: " + profileResponse.getBody());
+        }
         log.info("Created Late profile: {}", profileId);
 
-        // 2. Get the OAuth connect URL for the platform
-        String connectUrl = lateApiConfig.getBaseUrl() + "/api/v1/connect/" + platform + "?profileId=" + profileId;
-        ResponseEntity<Map> connectResponse = restTemplate.exchange(
-                connectUrl,
+        // 2. Get the OAuth connect URL — response may be JSON {url:...} or plain text
+        String connectEndpoint = lateApiConfig.getBaseUrl() + "/api/v1/connect/" + platform + "?profileId=" + profileId;
+        ResponseEntity<String> connectResponse = restTemplate.exchange(
+                connectEndpoint,
                 org.springframework.http.HttpMethod.GET,
                 new HttpEntity<>(headers),
-                Map.class
+                String.class
         );
 
         if (!connectResponse.getStatusCode().is2xxSuccessful() || connectResponse.getBody() == null) {
             throw new RuntimeException("Failed to get connect URL: " + connectResponse.getStatusCode());
         }
 
-        String oauthUrl = (String) connectResponse.getBody().get("url");
+        log.info("Late connect response: {}", connectResponse.getBody());
+
+        // Response: { "authUrl": "https://...", "state": "..." }
+        Map<String, Object> parsed = objectMapper.readValue(connectResponse.getBody(), new TypeReference<>() {});
+        String oauthUrl = (String) parsed.get("authUrl");
+
         log.info("Got connect URL for platform={} profileId={}", platform, profileId);
         return new ConnectUrlResult(oauthUrl, profileId);
     }
