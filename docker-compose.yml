@@ -3,7 +3,6 @@ version: '3.9'
 services:
   postgres:
     image: postgres:16
-    container_name: skedme_postgres
     environment:
       POSTGRES_DB: scheduler
       POSTGRES_USER: postgres
@@ -18,7 +17,6 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: skedme_minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -48,7 +46,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: skedme_backend
     depends_on:
       postgres:
         condition: service_healthy
@@ -80,11 +77,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: skedme_frontend
     depends_on:
       - backend
-    ports:
-      - "80:80"
 
 volumes:
   postgres_data:
